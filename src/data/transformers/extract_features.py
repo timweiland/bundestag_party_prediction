@@ -59,10 +59,6 @@ class NumExclamationQuestionExtractor(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
 
-    def get_avg_word_length(self, text):
-        words = remove_punctuation(text).split()
-        return sum([len(word) for word in words]) / len(words)
-
     def count_exclamations(self, text):
         return count_char(text, "!") / len(text)
 
