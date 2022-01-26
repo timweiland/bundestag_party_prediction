@@ -27,27 +27,6 @@ def is_word(s):
     return any(c.isalnum() for c in s)
 
 
-class AvgWordLengthExtractor(BaseEstimator, TransformerMixin):
-    """
-    Transformer that adds a feature containing the average word length of each text.
-    Note that punctuation is removed prior to getting the words.
-    """
-
-    def __init__(self):
-        pass
-
-    def fit(self, X, y=None):
-        return self
-
-    def get_avg_word_length(self, text):
-        words = remove_punctuation(text).split()
-        return sum([len(word) for word in words]) / len(words)
-
-    def transform(self, X):
-        X["avg_word_length"] = X["text"].apply(self.get_avg_word_length)
-        return X
-
-
 class NumExclamationQuestionExtractor(BaseEstimator, TransformerMixin):
     """
     Transformer that adds two features containing the relative number of exclamation marks and question marks.
@@ -71,27 +50,6 @@ class NumExclamationQuestionExtractor(BaseEstimator, TransformerMixin):
         return X
 
 
-class StopWordFractionExtractor(BaseEstimator, TransformerMixin):
-    """
-    Transformer that adds a feature containing the fraction of stop words.
-    """
-
-    def __init__(self):
-        pass
-
-    def fit(self, X, y=None):
-        return self
-
-    def get_stop_word_fraction(self, text):
-        words = remove_punctuation(text).lower().split()
-        num_stop_words = len([word for word in words if is_stop_word(word)])
-        return num_stop_words / len(words)
-
-    def transform(self, X):
-        X["stop_word_fraction"] = X["text"].apply(self.get_stop_word_fraction)
-        return X
-
-
 class Tokenizer(BaseEstimator, TransformerMixin):
     """
     Transformer that tokenizes the speeches.
@@ -107,11 +65,73 @@ class Tokenizer(BaseEstimator, TransformerMixin):
 
     def tokenize(self, text):
         words = nltk.word_tokenize(text)
-        words = [word for word in words if is_word(word) and not is_stop_word(word)]
+        words = [word for word in words if is_word(word)]
         return " ".join(words).lower()
 
     def transform(self, X):
         X["text"] = X["text"].apply(self.tokenize)
+        return X
+
+
+class AvgWordLengthExtractor(BaseEstimator, TransformerMixin):
+    """
+    Transformer that adds a feature containing the average word length of each text.
+    """
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def get_avg_word_length(self, text):
+        words = text.split()
+        return sum([len(word) for word in words]) / len(words)
+
+    def transform(self, X):
+        X["avg_word_length"] = X["text"].apply(self.get_avg_word_length)
+        return X
+
+
+class StopWordFractionExtractor(BaseEstimator, TransformerMixin):
+    """
+    Transformer that adds a feature containing the fraction of stop words.
+    """
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def get_stop_word_fraction(self, text):
+        words = text.split()
+        num_stop_words = len([word for word in words if is_stop_word(word)])
+        return num_stop_words / len(words)
+
+    def transform(self, X):
+        X["stop_word_fraction"] = X["text"].apply(self.get_stop_word_fraction)
+        return X
+
+
+class StopWordRemover(BaseEstimator, TransformerMixin):
+    """
+    Transformer that removes stop words.
+    """
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def remove_stop_words(self, text):
+        words = text.split()
+        words = [word for word in words if not is_stop_word(word)]
+        return " ".join(words)
+
+    def transform(self, X):
+        X["text"] = X["text"].apply(self.remove_stop_words)
         return X
 
 
@@ -131,4 +151,34 @@ class TfidfScoreExtractor(BaseEstimator, TransformerMixin):
         vectorizer = TfidfVectorizer()
         score_matrix = vectorizer.fit_transform(X["text"])
         X["avg_tfidf"] = score_matrix.mean(axis=1).ravel().A1
+        return X
+
+
+class RemoveUnwantedFeaturesTransformer(BaseEstimator, TransformerMixin):
+    """
+    Transformer that removes unwanted features/columns.
+    """
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X = X.drop(
+            columns=[
+                "index",
+                "date",
+                "agenda",
+                "speechnumber",
+                "speaker",
+                "party.facts.id",
+                "chair",
+                "terms",
+                "text",
+                "parliament",
+                "iso3country",
+            ]
+        )
         return X
