@@ -6,9 +6,10 @@ from sklearn.pipeline import Pipeline
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from transformers.clean_text import *
+from transformers.extract_features import *
 
 
-def get_pipeline():
+def get_cleaning_pipeline():
     return Pipeline(
         [
             ("chair_remover", RemoveChairTransformer()),
@@ -18,12 +19,29 @@ def get_pipeline():
             ),
             ("special_chars_remover", RemoveSpecialCharacterTransformer()),
             ("spelling_reformer", GermanSpellingReformTransformer()),
-        ]
+        ],
+        verbose=True,
+    )
+
+
+def get_feature_pipeline():
+    return Pipeline(
+        [
+            ("num_exclamation_question_extractor", NumExclamationQuestionExtractor()),
+            ("tokenizer", Tokenizer()),
+            ("avg_word_length_extractor", AvgWordLengthExtractor()),
+            ("stop_word_fraction_extractor", StopWordFractionExtractor()),
+            ("stop_word_remover", StopWordRemover()),
+            ("tfidf_score_extractor", TfidfScoreExtractor()),
+            ("unwanted_features_remover", RemoveUnwantedFeaturesTransformer()),
+        ],
+        verbose=True,
     )
 
 
 input_csv_name = "parlspeech_bundestag.csv"
-output_csv_name = "parlspeech_bundestag.csv"
+output_csv_name_clean = "parlspeech_bundestag_clean.csv"
+output_csv_name_feats = "parlspeech_bundestag_feats.csv"
 
 
 @click.command()
@@ -37,15 +55,22 @@ def main(input_filepath, output_filepath):
     logger.info("Making final data set from raw data")
 
     input_filepath = Path(input_filepath) / input_csv_name
-    output_filepath = Path(output_filepath) / output_csv_name
+    output_filepath_clean = Path(output_filepath) / output_csv_name_clean
+    output_filepath_feats = Path(output_filepath) / output_csv_name_feats
 
-    pipeline = get_pipeline()
+    cleaning_pipeline = get_cleaning_pipeline()
     logger.info("Reading input data...")
     data = pd.read_csv(input_filepath, parse_dates=["date"], low_memory=False)
-    logger.info("Running pipeline...")
-    data = pipeline.fit_transform(data)
-    logger.info("Writing transformed dataset...")
-    data.to_csv(output_filepath)
+    logger.info("Running cleaning pipeline...")
+    data = cleaning_pipeline.fit_transform(data)
+    logger.info("Writing cleaned dataset...")
+    data.to_csv(output_filepath_clean)
+
+    feature_pipeline = get_feature_pipeline()
+    logger.info("Running feature pipeline...")
+    data = feature_pipeline.fit_transform(data)
+    logger.info("Writing dataset with features...")
+    data.to_csv(output_filepath_feats, index=False)
     logger.info("Done!")
 
 
