@@ -104,3 +104,25 @@ class GermanSpellingReformTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X["text"] = X["text"].apply(self.replace_esszet)
         return X
+    
+
+class ReplaceDoubleFullstopsTransformer(BaseEstimator, TransformerMixin):
+    """
+    Transformer that replaces double full stops with single full stops.
+    """
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+    
+    def replace_double_full_stops(self, text):
+        return re.sub("\.\s*\.",".",text) # regex pattern matches two full stops separated by an arbitrary number of whitespaces
+
+    def transform(self, X):
+        X["text"] = X["text"].apply(self.replace_double_full_stops)
+        return X
+
+
+    
