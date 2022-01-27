@@ -6,6 +6,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.corpus import stopwords
 import nltk
+import textstat
 
 
 def remove_punctuation(s):
@@ -181,4 +182,138 @@ class RemoveUnwantedFeaturesTransformer(BaseEstimator, TransformerMixin):
                 "iso3country",
             ]
         )
+        return X
+
+
+class TextLengthExtractor(BaseEstimator, TransformerMixin):
+    """
+    Transformer that adds a feature containing text length.
+    """
+    
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+    
+    def text_length(self, text):
+        return len(text)
+
+    def transform(self, X):
+        X["text_length"] = X["text"].apply(self.text_length)
+        return X
+
+
+class AvgSentenceLengthExtractor(BaseEstimator, TransformerMixin):
+    """
+    Transformer that adds a feature containing the average sentence length.
+    """
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+    
+    def avg_sentence_length(text):
+        text_length = len(text)
+        sentences = nltk.sent_tokenize(text,language='german')
+        n_sentences = len(sentences)
+        return text_length/n_sentences
+
+    def transform(self, X):
+        X["avg_sentence_length"] = X["text"].apply(self.avg_sentence_length)
+        return X
+
+
+class NumOfProfanitiesExtractor(BaseEstimator, TransformerMixin):
+    """
+    Transformer that adds a feature containing the number of profanities.
+    The profanities stem from a predefined list of unique strings, which also includes declinations.
+    """
+    
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+    
+    profanities = ['Idiotin', 'Idioten', 'Möchtegern', 'Stümper', 'Hinterwäldlerin', 'Drecksack', 'Arschgeige', 
+               'Arschloch', 'Volltrottel', 'unterbelichtet', 'Nörglerin', 'Schwachkopf', 'Faulpelz', 
+               'Dreckskerl', 'Rowdy', 'hochnäsig', 'großmäulig', 'Scheiße', 'Deppen', 'verrückter', 
+               'Backpfeifengesicht', 'abgefahrener', 'Lümmel', 'Ochse', 'Nörgeln', 'Depp', 'bescheuertster', 
+               'Schnapsidee', 'Trottel', 'Nervensägen', 'blöde', 'Schlitzohr', 'Hanswürste', 'Zuhälter', 
+               'Bauerntölpel', 'Hetzer', 'Schnauze', 'Dummköpfin', 'spinnen', 'Hetzerin', 'hochnäsige', 
+               'spießig', 'Kacke', 'Ratte', 'Lackschuhpanter', 'Heuchlerin', 'dämlicher', 'beschissene', 
+               'Arsch', 'Nervensäge', 'beschissen', 'Blödmann', 'Klugscheißer', 'Bastard', 'aufgeblasener', 
+               'dummer', 'lahm', 'kotzen', 'altbacken', 'dümmstes', 'idiotisch', 'Schwachköpfe', 'scheiß', 
+               'abgefahren', 'Dummkopf', 'dumme', 'Dummköpfe', 'Kleingeist', 'Hornochse', 'bescheuertstes', 
+               'Schlange', 'Hackfresse', 'Armleuchter', 'Dreckschwein', 'hirnrissig', 'Verrückte', 'schlampig', 
+               'kacke', 'Harzer', 'Pisser', 'blödes', 'Hund', 'spinnt', 'Hornochsen', 'Abschaum', 'Stinktier', 
+               'Esel', 'Amateur', 'Großmaul', 'bescheuerte', 'verrückt', 'Alleswisser', 'blöd', 'Luder', 
+               'schäbiger', 'Berufsrandalierer', 'Fresse', 'Stümperin', 'Zicke', 'aufgeblasene', 'Hanswurst', 
+               'Sack', 'Teufel', 'Vollpfosten', 'Ziege', 'Galgenkandidat', 'Hurensohn', 'kindisch', 'Idiot', 
+               'Dreckschweine', 'schmierig', 'Verrückter', 'Angeberin', 'Schwein', 'Hinterwäldler', 'verdammte', 
+               'kleingeistig', 'aufgeblasen', 'Affe', 'bescheuertste', 'versifft', 'Bastarde', 'bieder', 
+               'schäbig', 'Blöde', 'Schweine', 'Gangster', 'blödsinnig', 'dumm', 'stümperhaft', 'Arschlöcher', 
+               'Spießer', 'verdammt', 'bescheuert', 'affig', 'Faulpelze', 'Angeber', 'Arschgeigen', 'Aasgeier', 
+               'Besserwisser', 'Blöder', 'verrückte', 'Blödmänner', 'Heuchler', 'Nörgler', 'dämlich', 'dümmste', 
+               'Hurensöhne', 'heuchlerisch', 'Pisse', 'bescheuerter', 'kleinkariert', 'Karnickel', 'kleinkarierte',
+               'Blähhals']
+    
+    def count_profanities(text):
+        n_profanities = 0
+        tokens = nltk.word_tokenize(text, language='german')
+        for profanity in profanities:
+            n_profanities += tokens.count(profanity)
+        return n_profanities
+
+    def transform(self, X):
+        X["num_profanities"] = X["text"].apply(self.count_profanities)
+        return X
+    
+class TTRExtractor(BaseEstimator, TransformerMixin):
+    """
+    Transformer that adds a feature containing the type-to-token ratio (#unique words / #total words).
+    """
+    
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def TTR(text):
+        tokens = nltk.word_tokenize(text, language='german')
+        tokens = [token.lower() for token in tokens if token.isalpha()]
+        n_total = len(tokens)
+        n_unique = len(set(tokens))
+        return n_unique/n_total
+
+    def transform(self, X):
+        X["TTR"] = X["text"].apply(self.TTR)
+        return X
+
+
+class ReadabilityExtractor(BaseEstimator, TransformerMixin):
+    """
+    Transformer that adds a feature containing a readability score. 
+    Readability is calculated as Flesch-Reading-Ease for the German language.
+    Interpretation: score of 0-30: very difficult, 30-50: difficult,
+    50-60: medium/difficult, 60-70: medium, 70-80: medium/easy, 80-90: easy,
+    90-100: very easy. (https://de.wikipedia.org/wiki/Lesbarkeitsindex#Flesch-Reading-Ease)
+    """
+    
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+    
+    def readability(text):
+        textstat.set_lang("de")
+        return textstat.flesch_reading_ease(text)
+
+    def transform(self, X):
+        X["readability"] = X["text"].apply(self.readability)
         return X
