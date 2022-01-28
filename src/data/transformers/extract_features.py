@@ -28,6 +28,25 @@ def is_word(s):
     return any(c.isalnum() for c in s)
 
 
+d = {} # create dictionary 'd' with words as keys and their sentiment-scores as values
+
+with open("./SentiWS_v2.0/SentiWS_v2.0_Negative.txt") as f:
+    for line in f:
+        split = re.split('\||\s|,',line)
+        keys = [split[0]] + split[3:-1]
+        value = float(split[2])
+        for key in keys:
+            d[key] = value
+
+with open("./SentiWS_v2.0/SentiWS_v2.0_Positive.txt") as g:
+    for line in g:
+        split = re.split('\||\s|,',line)
+        keys = [split[0]] + split[3:-1]
+        value = float(split[2])
+        for key in keys:
+            d[key] = value
+
+
 class NumExclamationQuestionExtractor(BaseEstimator, TransformerMixin):
     """
     Transformer that adds two features containing the relative number of exclamation marks and question marks.
@@ -316,4 +335,36 @@ class ReadabilityExtractor(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         X["readability"] = X["text"].apply(self.readability)
+        return X
+    
+
+class SentimentExtractor(BaseEstimator, TransformerMixin):    
+    """
+    Transformer that adds a feature containing a sentiment score (range: -1 to +1) for the text,
+    calculated as average of sentiment scores for all words in the text which have an entry in the 'SentiWS' data set.
+    """
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def sentiment(text):
+        tokens = nltk.word_tokenize(text, language='german')
+        tokens = [token.lower() for token in tokens if token.isalpha()]
+        sentiment_sum = 0
+        sentiment_n = 0
+        for token in tokens:
+            sentiment_score = d.get(token)
+            if sentiment_score != None:
+                sentiment_sum += sentiment_score
+                sentiment_n += 1
+        if sentiment_n > 0:
+            return sentiment_sum/sentiment_n
+        else:
+            return 0
+
+    def transform(self, X):
+        X["sentiment"] = X["text"].apply(self.sentiment)
         return X
