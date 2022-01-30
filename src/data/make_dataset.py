@@ -19,6 +19,7 @@ def get_cleaning_pipeline():
             ),
             ("special_chars_remover", RemoveSpecialCharacterTransformer()),
             ("spelling_reformer", GermanSpellingReformTransformer()),
+            ("double_fullstops_remover", ReplaceDoubleFullstopsTransformer()),
         ],
         verbose=True,
     )
@@ -27,8 +28,14 @@ def get_cleaning_pipeline():
 def get_feature_pipeline():
     return Pipeline(
         [
+            ("text_length_extractor", TextLengthExtractor()),
+            ("avg_sentence_length_extractor", AvgSentenceLengthExtractor()),
             ("num_exclamation_question_extractor", NumExclamationQuestionExtractor()),
+            ("readability_extractor", ReadabilityExtractor()),
             ("tokenizer", Tokenizer()),
+            ("num_profanities_extractor", NumOfProfanitiesExtractor()),
+            ("ttr_extractor", TTRExtractor()),
+            ("sentiment_extractor", SentimentExtractor()),
             ("avg_word_length_extractor", AvgWordLengthExtractor()),
             ("stop_word_fraction_extractor", StopWordFractionExtractor()),
             ("stop_word_remover", StopWordRemover()),
