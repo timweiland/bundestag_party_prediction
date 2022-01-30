@@ -7,6 +7,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.corpus import stopwords
 import nltk
 import textstat
+from pathlib import Path
 
 
 def remove_punctuation(s):
@@ -26,25 +27,6 @@ def is_stop_word(word):
 
 def is_word(s):
     return any(c.isalnum() for c in s)
-
-
-d = {} # create dictionary 'd' with words as keys and their sentiment-scores as values
-
-with open("./SentiWS_v2.0/SentiWS_v2.0_Negative.txt") as f:
-    for line in f:
-        split = re.split('\||\s|,',line)
-        keys = [split[0]] + split[3:-1]
-        value = float(split[2])
-        for key in keys:
-            d[key] = value
-
-with open("./SentiWS_v2.0/SentiWS_v2.0_Positive.txt") as g:
-    for line in g:
-        split = re.split('\||\s|,',line)
-        keys = [split[0]] + split[3:-1]
-        value = float(split[2])
-        for key in keys:
-            d[key] = value
 
 
 class NumExclamationQuestionExtractor(BaseEstimator, TransformerMixin):
@@ -84,7 +66,7 @@ class Tokenizer(BaseEstimator, TransformerMixin):
         return self
 
     def tokenize(self, text):
-        words = nltk.word_tokenize(text)
+        words = nltk.word_tokenize(text, language="german")
         words = [word for word in words if is_word(word)]
         return " ".join(words).lower()
 
@@ -208,13 +190,13 @@ class TextLengthExtractor(BaseEstimator, TransformerMixin):
     """
     Transformer that adds a feature containing text length.
     """
-    
+
     def __init__(self):
         pass
 
     def fit(self, X, y=None):
         return self
-    
+
     def text_length(self, text):
         return len(text)
 
@@ -233,12 +215,12 @@ class AvgSentenceLengthExtractor(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         return self
-    
-    def avg_sentence_length(text):
+
+    def avg_sentence_length(self, text):
         text_length = len(text)
-        sentences = nltk.sent_tokenize(text,language='german')
+        sentences = nltk.sent_tokenize(text, language="german")
         n_sentences = len(sentences)
-        return text_length/n_sentences
+        return text_length / n_sentences
 
     def transform(self, X):
         X["avg_sentence_length"] = X["text"].apply(self.avg_sentence_length)
@@ -250,64 +232,47 @@ class NumOfProfanitiesExtractor(BaseEstimator, TransformerMixin):
     Transformer that adds a feature containing the number of profanities.
     The profanities stem from a predefined list of unique strings, which also includes declinations.
     """
-    
+
     def __init__(self):
-        pass
+        self.profanities = []
+        file_path = (Path(__file__).parent) / "profanities.txt"
+        with open(file_path, "r") as f:
+            self.profanities = f.read().split()
 
     def fit(self, X, y=None):
         return self
-    
-    profanities = ['Idiotin', 'Idioten', 'Möchtegern', 'Stümper', 'Hinterwäldlerin', 'Drecksack', 'Arschgeige', 
-               'Arschloch', 'Volltrottel', 'unterbelichtet', 'Nörglerin', 'Schwachkopf', 'Faulpelz', 
-               'Dreckskerl', 'Rowdy', 'hochnäsig', 'großmäulig', 'Scheiße', 'Deppen', 'verrückter', 
-               'Backpfeifengesicht', 'abgefahrener', 'Lümmel', 'Ochse', 'Nörgeln', 'Depp', 'bescheuertster', 
-               'Schnapsidee', 'Trottel', 'Nervensägen', 'blöde', 'Schlitzohr', 'Hanswürste', 'Zuhälter', 
-               'Bauerntölpel', 'Hetzer', 'Schnauze', 'Dummköpfin', 'spinnen', 'Hetzerin', 'hochnäsige', 
-               'spießig', 'Kacke', 'Ratte', 'Lackschuhpanter', 'Heuchlerin', 'dämlicher', 'beschissene', 
-               'Arsch', 'Nervensäge', 'beschissen', 'Blödmann', 'Klugscheißer', 'Bastard', 'aufgeblasener', 
-               'dummer', 'lahm', 'kotzen', 'altbacken', 'dümmstes', 'idiotisch', 'Schwachköpfe', 'scheiß', 
-               'abgefahren', 'Dummkopf', 'dumme', 'Dummköpfe', 'Kleingeist', 'Hornochse', 'bescheuertstes', 
-               'Schlange', 'Hackfresse', 'Armleuchter', 'Dreckschwein', 'hirnrissig', 'Verrückte', 'schlampig', 
-               'kacke', 'Harzer', 'Pisser', 'blödes', 'Hund', 'spinnt', 'Hornochsen', 'Abschaum', 'Stinktier', 
-               'Esel', 'Amateur', 'Großmaul', 'bescheuerte', 'verrückt', 'Alleswisser', 'blöd', 'Luder', 
-               'schäbiger', 'Berufsrandalierer', 'Fresse', 'Stümperin', 'Zicke', 'aufgeblasene', 'Hanswurst', 
-               'Sack', 'Teufel', 'Vollpfosten', 'Ziege', 'Galgenkandidat', 'Hurensohn', 'kindisch', 'Idiot', 
-               'Dreckschweine', 'schmierig', 'Verrückter', 'Angeberin', 'Schwein', 'Hinterwäldler', 'verdammte', 
-               'kleingeistig', 'aufgeblasen', 'Affe', 'bescheuertste', 'versifft', 'Bastarde', 'bieder', 
-               'schäbig', 'Blöde', 'Schweine', 'Gangster', 'blödsinnig', 'dumm', 'stümperhaft', 'Arschlöcher', 
-               'Spießer', 'verdammt', 'bescheuert', 'affig', 'Faulpelze', 'Angeber', 'Arschgeigen', 'Aasgeier', 
-               'Besserwisser', 'Blöder', 'verrückte', 'Blödmänner', 'Heuchler', 'Nörgler', 'dämlich', 'dümmste', 
-               'Hurensöhne', 'heuchlerisch', 'Pisse', 'bescheuerter', 'kleinkariert', 'Karnickel', 'kleinkarierte',
-               'Blähhals']
-    
-    def count_profanities(text):
+
+    def count_profanities(self, text):
         n_profanities = 0
-        tokens = nltk.word_tokenize(text, language='german')
-        for profanity in profanities:
-            n_profanities += tokens.count(profanity)
+        # tokens = nltk.word_tokenize(text, language="german")
+        tokens = text.split()
+        for profanity in self.profanities:
+            n_profanities += tokens.count(profanity.lower())
         return n_profanities
 
     def transform(self, X):
         X["num_profanities"] = X["text"].apply(self.count_profanities)
         return X
-    
+
+
 class TTRExtractor(BaseEstimator, TransformerMixin):
     """
     Transformer that adds a feature containing the type-to-token ratio (#unique words / #total words).
     """
-    
+
     def __init__(self):
         pass
 
     def fit(self, X, y=None):
         return self
 
-    def TTR(text):
-        tokens = nltk.word_tokenize(text, language='german')
-        tokens = [token.lower() for token in tokens if token.isalpha()]
+    def TTR(self, text):
+        # tokens = nltk.word_tokenize(text, language="german")
+        # tokens = [token.lower() for token in tokens if token.isalpha()]
+        tokens = text.split()
         n_total = len(tokens)
         n_unique = len(set(tokens))
-        return n_unique/n_total
+        return n_unique / n_total
 
     def transform(self, X):
         X["TTR"] = X["text"].apply(self.TTR)
@@ -316,52 +281,70 @@ class TTRExtractor(BaseEstimator, TransformerMixin):
 
 class ReadabilityExtractor(BaseEstimator, TransformerMixin):
     """
-    Transformer that adds a feature containing a readability score. 
+    Transformer that adds a feature containing a readability score.
     Readability is calculated as Flesch-Reading-Ease for the German language.
     Interpretation: score of 0-30: very difficult, 30-50: difficult,
     50-60: medium/difficult, 60-70: medium, 70-80: medium/easy, 80-90: easy,
     90-100: very easy. (https://de.wikipedia.org/wiki/Lesbarkeitsindex#Flesch-Reading-Ease)
     """
-    
+
     def __init__(self):
         pass
 
     def fit(self, X, y=None):
         return self
-    
-    def readability(text):
+
+    def readability(self, text):
         textstat.set_lang("de")
         return textstat.flesch_reading_ease(text)
 
     def transform(self, X):
         X["readability"] = X["text"].apply(self.readability)
         return X
-    
 
-class SentimentExtractor(BaseEstimator, TransformerMixin):    
+
+class SentimentExtractor(BaseEstimator, TransformerMixin):
     """
     Transformer that adds a feature containing a sentiment score (range: -1 to +1) for the text,
     calculated as average of sentiment scores for all words in the text which have an entry in the 'SentiWS' data set.
     """
 
     def __init__(self):
-        pass
+        self.sentiment_dict = {}
+        negative_file_path = (
+            Path(__file__).parent
+        ) / "./SentiWS_v2.0/SentiWS_v2.0_Negative.txt"
+        positive_file_path = (
+            Path(__file__).parent
+        ) / "./SentiWS_v2.0/SentiWS_v2.0_Positive.txt"
+        self.read_sentiments(negative_file_path)
+        self.read_sentiments(positive_file_path)
 
     def fit(self, X, y=None):
         return self
 
-    def sentiment(text):
-        tokens = nltk.word_tokenize(text, language='german')
-        tokens = [token.lower() for token in tokens if token.isalpha()]
+    def read_sentiments(self, file_path):
+        with open(file_path) as f:
+            for line in f:
+                split = re.split("\||\s|,", line)
+                keys = [split[0]] + split[3:-1]
+                value = float(split[2])
+                for key in keys:
+                    self.sentiment_dict[key] = value
+
+    def sentiment(self, text):
+        # tokens = nltk.word_tokenize(text, language='german')
+        # tokens = [token.lower() for token in tokens if token.isalpha()]
+        tokens = text.split()
         sentiment_sum = 0
         sentiment_n = 0
         for token in tokens:
-            sentiment_score = d.get(token)
+            sentiment_score = self.sentiment_dict.get(token)
             if sentiment_score != None:
                 sentiment_sum += sentiment_score
                 sentiment_n += 1
         if sentiment_n > 0:
-            return sentiment_sum/sentiment_n
+            return sentiment_sum / sentiment_n
         else:
             return 0
 
