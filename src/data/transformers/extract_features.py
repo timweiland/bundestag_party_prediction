@@ -18,7 +18,8 @@ def count_char(text, char):
     return text.count(char)
 
 
-stop_words = stopwords.words("german")
+custom_stop_words = ["herr", "herren", "dame", "damen", "kollege", "kollegen"]
+stop_words = stopwords.words("german") + custom_stop_words
 
 
 def is_stop_word(word):
