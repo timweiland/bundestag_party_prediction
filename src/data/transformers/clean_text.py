@@ -19,6 +19,21 @@ class RemoveChairTransformer(BaseEstimator, TransformerMixin):
         return X[X["chair"] == False]
 
 
+class RemoveIndependentPartyTransformer(BaseEstimator, TransformerMixin):
+    """
+    Transformer that removes speech blocks from speakers who do not belong to any party.
+    """
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        return X[X["party"] != "independent"]
+
+
 class RemoveCommentaryTransformer(BaseEstimator, TransformerMixin):
     """
     Transformer that removes commentary.
@@ -104,7 +119,7 @@ class GermanSpellingReformTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X["text"] = X["text"].apply(self.replace_esszet)
         return X
-    
+
 
 class ReplaceDoubleFullstopsTransformer(BaseEstimator, TransformerMixin):
     """
@@ -116,13 +131,12 @@ class ReplaceDoubleFullstopsTransformer(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         return self
-    
+
     def replace_double_full_stops(self, text):
-        return re.sub("\.\s*\.",".",text) # regex pattern matches two full stops separated by an arbitrary number of whitespaces
+        return re.sub(
+            "\.\s*\.", ".", text
+        )  # regex pattern matches two full stops separated by an arbitrary number of whitespaces
 
     def transform(self, X):
         X["text"] = X["text"].apply(self.replace_double_full_stops)
         return X
-
-
-    

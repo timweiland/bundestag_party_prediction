@@ -13,6 +13,7 @@ def get_cleaning_pipeline():
     return Pipeline(
         [
             ("chair_remover", RemoveChairTransformer()),
+            ("independent_party_remover", RemoveIndependentPartyTransformer()),
             (
                 "commentary_remover",
                 RemoveCommentaryTransformer(remove_leftovers=True, verbose=True),
