@@ -182,7 +182,8 @@ class RemoveUnwantedFeaturesTransformer(BaseEstimator, TransformerMixin):
                 "text",
                 "parliament",
                 "iso3country",
-            ]
+            ],
+            errors="ignore",
         )
         return X
 
