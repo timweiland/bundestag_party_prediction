@@ -29,6 +29,10 @@ requirements: test_environment
 data: requirements
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
+## Train model
+train: requirements
+	$(PYTHON_INTERPRETER) src/models/train_model.py data/processed models/model.joblib
+
 ## Delete all compiled Python files
 clean:
 	find . -type f -name "*.py[co]" -delete
